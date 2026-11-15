@@ -45,6 +45,7 @@ android {
         targetSdk = 36
         versionCode = 12
         versionName = "0.7.1"
+        manifestPlaceholders["appLabel"] = "一起听"
     }
     compileOptions { isCoreLibraryDesugaringEnabled = true }
     packaging {
@@ -53,6 +54,15 @@ android {
     }
     buildTypes {
         release { isMinifyEnabled = false }
+        // A separate app install for testing, with its own preferences and server identities.
+        create("preview") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".testing"
+            versionNameSuffix = "-test"
+            manifestPlaceholders["appLabel"] = "一起听·测试"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("debug")
+        }
     }
 }
 
