@@ -33,9 +33,10 @@ const (
 	DBFile    = "data/listen_together.db"
 	AvatarDir = "data/avatars"
 	// KeyFile 是服务器身份私钥。丢了或换了，所有人都要重新加入；搬家时连同 data/ 一起拷走。
-	KeyFile      = "data/lt_server_key.pem"
-	avatarMax    = 512 << 10
-	songCacheMax = 5000
+	KeyFile   = "data/lt_server_key.pem"
+	avatarMax = 512 << 10
+	// Leave room for a 10,000-track public playlist and concurrent room searches.
+	songCacheMax = 20000
 	memberKey    = "lt_member"
 )
 
@@ -56,6 +57,7 @@ type API struct {
 	Rooms     *room.Manager
 	Hub       *hub.Hub
 	Search    func(source, keyword string) ([]model.Song, error)
+	Playlists func(source, link string) (*model.Playlist, []model.Song, error)
 	Podcasts  *podcast.Client
 	YouTube   *youtubeClient
 	songs     *songCache
@@ -72,6 +74,7 @@ func New(store *members.Store) *API {
 		Videos:    videourl.New(),
 		Hub:       hub.New(),
 		songs:     newSongCache(songCacheMax),
+		Playlists: publicPlaylist,
 		avatarDir: AvatarDir,
 		Podcasts:  podcast.New(func() string { return core.CM.Get("netease") }),
 		YouTube:   newYouTubeClient(),
@@ -142,6 +145,7 @@ func (a *API) Mount(g *gin.RouterGroup) {
 	g.GET("/avatars/:id", a.handleAvatar)
 	auth.GET("/rooms", func(c *gin.Context) { c.JSON(200, gin.H{"rooms": a.Rooms.List()}) })
 	auth.GET("/search", a.handleSearch)
+	auth.GET("/playlists/resolve", a.handlePlaylist)
 	auth.GET("/podcasts", a.handlePodcasts)
 	auth.GET("/podcasts/:id/programs", a.handlePrograms)
 	auth.GET("/play/:source/:id", a.handlePlay)
@@ -465,7 +469,7 @@ func (a *API) addSong(userID string, r *room.Room, source, id string) (int, erro
 	}
 	song := a.song(source, id)
 	if song.Name == "" {
-		return 0, &room.Error{Code: room.CodeNotFound, Msg: "请先搜索再点歌"}
+		return 0, &room.Error{Code: room.CodeNotFound, Msg: "请重新搜索或刷新歌单后点歌"}
 	}
 	if _, err := a.Resolver.Lookup(song, false); err != nil {
 		return 0, &room.Error{Code: room.CodeUnplayable, Msg: err.Error()}
