@@ -16,6 +16,7 @@ import app.listentogether.net.ServerApi
 import app.listentogether.net.SocketEvent
 import app.listentogether.net.createHttpClient
 import app.listentogether.player.AudioPlayer
+import app.listentogether.playlist.PlaylistLibrary
 import app.listentogether.player.PlaybackCoordinator
 import app.listentogether.player.SyncDebug
 import app.listentogether.room.RoomStore
@@ -79,6 +80,7 @@ class AppController(
     private val player: AudioPlayer,
     private val scope: CoroutineScope,
 ) {
+    val playlists = PlaylistLibrary(store)
     private val http = createHttpClient()
     private val clock = ClockSync()
     private val roomStore = RoomStore()
@@ -375,6 +377,8 @@ class AppController(
     // ---------- 歌单 ----------
 
     suspend fun search(query: String, source: String): List<TrackRef> = requireApi().search(query, source)
+
+    suspend fun playlist(link: String) = requireApi().playlist(link)
 
     suspend fun podcasts(query: String): List<Podcast> = requireApi().podcasts(query)
 

@@ -9,6 +9,7 @@ import app.listentogether.model.ProgramPage
 import app.listentogether.model.RoomSummary
 import app.listentogether.model.TrackRef
 import app.listentogether.model.VideoInfo
+import app.listentogether.playlist.PlaylistPreview
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -110,6 +111,12 @@ class ServerApi(
             auth()
             parameter("q", query)
         }.parse<PodcastsResponse>().podcasts
+
+    suspend fun playlist(link: String): PlaylistPreview {
+        val response = client.get("$api/playlists/resolve") { auth(); parameter("url", link) }
+        if (response.status.value == 404) throw ApiException("PLAYLIST_UNAVAILABLE", "服务器还没更新歌单导入功能")
+        return response.parse()
+    }
 
     suspend fun programs(podcastId: String, offset: Int): ProgramPage =
         client.get("$api/podcasts/${podcastId.encodeURLPathPart()}/programs") {

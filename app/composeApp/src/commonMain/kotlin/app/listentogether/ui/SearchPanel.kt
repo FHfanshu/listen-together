@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -53,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import app.listentogether.AppController
 import app.listentogether.model.Podcast
 import app.listentogether.model.TrackRef
+import app.listentogether.playlist.PlaylistLinks
 
 private const val PodcastTab = "podcast"
 
@@ -90,6 +92,14 @@ fun SearchPanel(controller: AppController, ui: UiActions, onClose: () -> Unit, v
     var added by remember { mutableStateOf(setOf<String>()) }
     var openPodcast by remember { mutableStateOf<Podcast?>(null) }
     var searchNow by remember { mutableStateOf(false) }
+    var playlistMode by remember { mutableStateOf(false) }
+    var playlistDraft by remember { mutableStateOf("") }
+
+    if (playlistMode && !videoOnly) {
+        PlaylistPanel(controller, ui, playlistDraft, added, onAdded = { added = added + it.key },
+            onBack = { playlistMode = false; playlistDraft = "" }, onClose = onClose)
+        return
+    }
 
     PlatformBackHandler { if (openPodcast != null) openPodcast = null else onClose() }
 
@@ -111,6 +121,11 @@ fun SearchPanel(controller: AppController, ui: UiActions, onClose: () -> Unit, v
     val clip = rememberClipboardText()
     LaunchedEffect(clip) {
         val c = clip?.trim().orEmpty()
+        if (!videoOnly && query.isBlank() && PlaylistLinks.contains(c) && ClipMemory.takeOnce(c)) {
+            playlistDraft = c
+            playlistMode = true
+            return@LaunchedEffect
+        }
         val from = linkSource(c)
         if (c.isNotEmpty() && query.isBlank() && from != null && ClipMemory.takeOnce(c)) {
             query = c
@@ -121,6 +136,11 @@ fun SearchPanel(controller: AppController, ui: UiActions, onClose: () -> Unit, v
 
     fun search() {
         if (query.isBlank()) return
+        if (!videoOnly && PlaylistLinks.contains(query)) {
+            playlistDraft = query
+            playlistMode = true
+            return
+        }
         linkSource(query)?.let { source = it }
         loading = true
         val tab = source
@@ -154,7 +174,7 @@ fun SearchPanel(controller: AppController, ui: UiActions, onClose: () -> Unit, v
                 value = query,
                 onValueChange = {
                     // 一次多出一大段、里面有视频链接，就是粘贴进来的：不用再点搜索，直接解析。
-                    val pasted = it.length - query.length > 8 && linkSource(it) != null
+                    val pasted = it.length - query.length > 8 && (linkSource(it) != null || (!videoOnly && PlaylistLinks.contains(it)))
                     query = it
                     if (pasted) search()
                 },
@@ -166,7 +186,7 @@ fun SearchPanel(controller: AppController, ui: UiActions, onClose: () -> Unit, v
                             "netease_voice" -> "搜声音：翻唱、现场、有声书…"
                             "bilibili" -> "粘贴 B 站视频链接或 BV 号"
                             "youtube" -> "搜 YouTube，或粘贴视频链接"
-                            else -> "搜歌名、歌手"
+                            else -> "搜歌名、歌手，或粘贴歌单链接"
                         },
                         color = Palette.Muted,
                     )
@@ -182,6 +202,7 @@ fun SearchPanel(controller: AppController, ui: UiActions, onClose: () -> Unit, v
                 ),
             )
         }
+        if (!videoOnly) PlaylistTabs(selected = false, onSearch = {}, onPlaylists = { playlistMode = true })
         Row(
             Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -320,7 +341,7 @@ private fun PodcastDetail(
 }
 
 @Composable
-private fun TrackRow(track: TrackRef, done: Boolean, onAdd: () -> Unit) {
+internal fun TrackRow(track: TrackRef, done: Boolean, selection: Boolean? = null, enabled: Boolean = true, onAdd: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(14.dp)).padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -334,10 +355,11 @@ private fun TrackRow(track: TrackRef, done: Boolean, onAdd: () -> Unit) {
                 maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp),
             )
         }
-        Box(
+        if (selection != null) Checkbox(checked = selection, onCheckedChange = { onAdd() }, enabled = enabled)
+        else Box(
             Modifier.size(38.dp).clip(CircleShape)
                 .background(if (done) Palette.SurfaceHigh else Palette.AccentSoft)
-                .clickable(enabled = !done, onClick = onAdd),
+                .clickable(enabled = !done && enabled, onClick = onAdd),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
