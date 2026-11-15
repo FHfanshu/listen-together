@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>{{ if eq .Mode "setup" }}初始化 · 一起听{{ else }}登录 · 一起听{{ end }}</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#1d1f23;--muted:#6b7280;--line:#e6e8eb;--accent:#e2364b;--err:#b91c1c;--err-soft:#fdecec}
+@media (prefers-color-scheme:dark){:root{--bg:#111214;--card:#1b1d21;--text:#e8e9eb;--muted:#9aa0a8;--line:#2c2f35;--accent:#ff5468;--err:#fca5a5;--err-soft:#3a1d1d}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:var(--bg);color:var(--text);font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+main{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px 24px}
+h1{font-size:20px;margin:0 0 4px}
+.hint{color:var(--muted);font-size:13px;margin:0 0 20px}
+.error{background:var(--err-soft);color:var(--err);border-radius:9px;padding:8px 12px;font-size:14px;margin-bottom:16px}
+label{display:block;margin-bottom:14px}
+label span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+input{width:100%;font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--text)}
+input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.field-hint{color:var(--muted);font-size:12px;margin:-8px 0 14px}
+code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--bg);padding:1px 5px;border-radius:5px}
+button{width:100%;font:inherit;font-weight:600;border:0;border-radius:9px;padding:10px;margin-top:6px;cursor:pointer;background:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<main>
+  {{ if eq .Mode "setup" }}
+  <h1>初始化管理员</h1>
+  <p class="hint">第一次使用，先创建管理员账号。之后用它登录后台，管理音乐账号和邀请码。</p>
+  {{ else }}
+  <h1>登录后台</h1>
+  <p class="hint">一起听 · 管理员登录</p>
+  {{ end }}
+
+  {{ if .Error }}<div class="error">{{ .Error }}</div>{{ end }}
+
+  <form method="post" action="{{.Action}}">
+    <input type="hidden" name="next" value="{{.Next}}">
+    {{ if eq .Mode "setup" }}
+    <label><span>初始化令牌</span>
+      <input type="text" name="setup_token" autocomplete="off" aria-describedby="setup-token-help" required></label>
+    <p id="setup-token-help" class="field-hint">在启动服务的终端里找 <code>Web setup token:</code> 那一行。</p>
+    {{ end }}
+    <label><span>用户名</span>
+      <input type="text" name="username"{{ if eq .Mode "setup" }} value="{{.Username}}" autocomplete="username"{{ else }} autocomplete="off"{{ end }} required autofocus></label>
+    <label><span>密码</span>
+      <input type="password" name="password" autocomplete="{{ if eq .Mode "setup" }}new-password{{ else }}current-password{{ end }}" minlength="6" required></label>
+    {{ if eq .Mode "setup" }}
+    <label><span>确认密码</span>
+      <input type="password" name="password_confirm" autocomplete="new-password" minlength="6" required></label>
+    {{ end }}
+    <button type="submit">{{.Button}}</button>
+  </form>
+</main>
+</body>
+</html>
