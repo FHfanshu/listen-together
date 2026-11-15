@@ -95,6 +95,26 @@ fun SearchPanel(controller: AppController, ui: UiActions, onClose: () -> Unit, v
     var playlistMode by remember { mutableStateOf(false) }
     var playlistDraft by remember { mutableStateOf("") }
 
+    // Keep the clipboard observer mounted across child pages; returning must not replay the same event.
+    val linkSource = { text: String -> videoLinkSource(text)?.takeIf { videoOnly || it == "bilibili" } }
+    val clip = rememberClipboardText()
+    LaunchedEffect(clip) {
+        if (playlistMode || openPodcast != null) return@LaunchedEffect
+        val c = clip?.trim().orEmpty()
+        if (!videoOnly && query.isBlank() && PlaylistLinks.contains(c) && ClipMemory.takeOnce(c)) {
+            playlistDraft = c
+            playlistMode = true
+            return@LaunchedEffect
+        }
+        val from = linkSource(c)
+        if (c.isNotEmpty() && query.isBlank() && from != null && ClipMemory.takeOnce(c)) {
+            query = c
+            ui.toast(if (from == "youtube") "已从剪贴板填入 YouTube 链接" else "已从剪贴板填入 B 站链接")
+            searchNow = true
+        }
+    }
+
+
     if (playlistMode && !videoOnly) {
         PlaylistPanel(controller, ui, playlistDraft, added, onAdded = { added = added + it.key },
             onBack = { playlistMode = false; playlistDraft = "" }, onClose = onClose)
@@ -116,27 +136,11 @@ fun SearchPanel(controller: AppController, ui: UiActions, onClose: () -> Unit, v
         return
     }
 
-    // 剪贴板里有 B 站（放映厅里还有 YouTube）分享链接：打开点歌/点视频时直接填进去并解析（同一段只填一次）。
-    val linkSource = { text: String -> videoLinkSource(text)?.takeIf { videoOnly || it == "bilibili" } }
-    val clip = rememberClipboardText()
-    LaunchedEffect(clip) {
-        val c = clip?.trim().orEmpty()
-        if (!videoOnly && query.isBlank() && PlaylistLinks.contains(c) && ClipMemory.takeOnce(c)) {
-            playlistDraft = c
-            playlistMode = true
-            return@LaunchedEffect
-        }
-        val from = linkSource(c)
-        if (c.isNotEmpty() && query.isBlank() && from != null && ClipMemory.takeOnce(c)) {
-            query = c
-            ui.toast(if (from == "youtube") "已从剪贴板填入 YouTube 链接" else "已从剪贴板填入 B 站链接")
-            searchNow = true
-        }
-    }
 
     fun search() {
         if (query.isBlank()) return
         if (!videoOnly && PlaylistLinks.contains(query)) {
+            ClipMemory.takeOnce(query.trim())
             playlistDraft = query
             playlistMode = true
             return

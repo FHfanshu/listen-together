@@ -85,6 +85,8 @@ internal fun PlaylistPanel(
 
     fun resolve(value: String) {
         if (value.isBlank() || adding) return
+        // Manual pasting/opening also consumes the link, before clipboard auto-detection can run.
+        ClipMemory.takeOnce(value.trim())
         loadJob?.cancel()
         link = value
         loading = true
@@ -139,7 +141,7 @@ internal fun PlaylistPanel(
     fun back() {
         loadJob?.cancel()
         addJob?.cancel()
-        if (preview != null) { preview = null; selecting = false; selected = emptySet(); error = null }
+        if (preview != null && initialLink.isBlank()) { preview = null; selecting = false; selected = emptySet(); error = null }
         else onBack()
     }
     PlatformBackHandler { back() }
