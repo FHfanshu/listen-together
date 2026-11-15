@@ -14,6 +14,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import app.listentogether.R
+import app.listentogether.android.output.MusicMediaSession
 import app.listentogether.model.PlaybackStatus
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
@@ -31,11 +32,13 @@ import kotlinx.coroutines.launch
 class RoomService : Service() {
     private val scope = MainScope()
     private val app get() = application as ListenApp
+    private lateinit var media: MusicMediaSession
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
+        media = MusicMediaSession(app, scope)
         ensureChannel(this)
         // 先用占位内容立即进前台（必须在 5 秒内），再跟着房间状态刷新。
         startInForeground(build(NotiState()))
@@ -110,7 +113,7 @@ class RoomService : Service() {
             video -> "放映厅 $code · 后台只放声音 · $people"
             else -> "房间 $code · $people"
         }
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_listen)
             .setContentTitle(title)
             .setContentText(sub)
@@ -126,6 +129,9 @@ class RoomService : Service() {
             .addAction(0, if (muted) "取消静音" else "静音", action(ACTION_MUTE, 1))
             .addAction(0, "退出房间", action(ACTION_LEAVE, 2))
             .build()
+        return if (app.controller.room.value?.isVideo == false) {
+            Notification.Builder.recoverBuilder(this, notification).setStyle(media.notificationStyle()).build()
+        } else notification
     }
 
     private fun action(name: String, code: Int) = PendingIntent.getService(
@@ -133,6 +139,7 @@ class RoomService : Service() {
     )
 
     override fun onDestroy() {
+        media.release()
         scope.cancel()
         super.onDestroy()
     }

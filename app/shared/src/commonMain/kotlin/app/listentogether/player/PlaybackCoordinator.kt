@@ -7,6 +7,7 @@ import app.listentogether.model.TrackRef
 import app.listentogether.model.VideoInfo
 import app.listentogether.net.ServerApi
 import app.listentogether.sync.ClockSync
+import app.listentogether.sync.outputSyncMode
 import app.listentogether.sync.DriftAction
 import app.listentogether.sync.DriftController
 import app.listentogether.sync.SeekPlanner
@@ -60,7 +61,8 @@ class PlaybackCoordinator(
     private val reportStatus: suspend (seq: Int, status: String) -> Unit,
 ) : AudioPlayer.Listener {
     private var mode = syncMode
-    private var drift = mode.controller()
+    private var effectiveMode = outputSyncMode(mode, player.isRemoteOutput)
+    private var drift = effectiveMode.controller()
     private val seekPlan = SeekPlanner()
     private val _debug = MutableStateFlow(SyncDebug())
     val debug: StateFlow<SyncDebug> = _debug
@@ -279,6 +281,12 @@ class PlaybackCoordinator(
     private suspend fun driftLoop(pb: PlaybackState) {
         while (true) {
             delay(500)
+            val outputMode = outputSyncMode(mode, player.isRemoteOutput)
+            if (outputMode != effectiveMode) {
+                effectiveMode = outputMode
+                drift = effectiveMode.controller()
+                player.setRate(1f)
+            }
             val expected = expectedPositionMs(pb) ?: continue
             val actual = player.positionMs
             val best = clock.best
@@ -289,7 +297,7 @@ class PlaybackCoordinator(
                 actualMs = actual,
                 driftMs = actual - expected,
                 rate = drift.currentRate,
-                mode = mode,
+                mode = effectiveMode,
                 usingProxy = player.usingProxy,
                 seeks = seeks,
             )
@@ -307,7 +315,7 @@ class PlaybackCoordinator(
                 is DriftAction.Seek -> {
                     // 控制器已经把倍速记成 1.0，播放器也要跟着复位，不然跳完还在按 0.97/1.03 跑，误差又越攒越大。
                     player.setRate(1f)
-                    if (seekPlan.canSeek(clock.localNowMs())) seekToExpected(action.positionMs)
+                    if (player.supportsSeeking && seekPlan.canSeek(clock.localNowMs())) seekToExpected(action.positionMs)
                 }
             }
         }
@@ -317,9 +325,10 @@ class PlaybackCoordinator(
     fun setSyncMode(newMode: SyncMode) {
         if (newMode == mode) return
         mode = newMode
-        drift = newMode.controller()
+        effectiveMode = outputSyncMode(newMode, player.isRemoteOutput)
+        drift = effectiveMode.controller()
         player.setRate(1f)
-        _debug.value = _debug.value.copy(rate = 1f, mode = newMode)
+        _debug.value = _debug.value.copy(rate = 1f, mode = effectiveMode)
     }
 
     /** 跳到房间期望的位置，按缓冲区内/外分别加上学到的提前量。 */

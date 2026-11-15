@@ -208,6 +208,9 @@ fun RoomScreen(controller: AppController, room: Snapshot, ui: UiActions, onMinim
                 }
             }
             item {
+                AudioOutputButton(controller)
+            }
+            item {
                 AnimatedVisibility(showDebug, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
                     DebugPanel(controller)
                 }

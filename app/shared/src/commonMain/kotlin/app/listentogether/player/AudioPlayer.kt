@@ -56,6 +56,10 @@ interface AudioPlayer {
     val isPlaying: Boolean
     /** 当前用的是直连还是代理，调试页显示用。 */
     val usingProxy: Boolean
+    /** DLNA / system casting: use relaxed sync and never adjust playback rate. */
+    val isRemoteOutput: Boolean get() = false
+    /** Some renderers can play but do not implement Seek. */
+    val supportsSeeking: Boolean get() = true
     fun stop()
     fun release()
 }
