@@ -443,7 +443,7 @@ private fun NowPlaying(
                     tint = if (skipped) Palette.Accent else Palette.Text, modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(4.dp))
-                Text("跳过 ", style = MaterialTheme.typography.labelSmall, color = if (skipped) Palette.Accent else Palette.Text)
+                Text("切歌 ", style = MaterialTheme.typography.labelSmall, color = if (skipped) Palette.Accent else Palette.Text)
                 RollingCount(pb.skipperIds.size, if (skipped) Palette.Accent else Palette.Text)
                 Text("/$need", style = MaterialTheme.typography.labelSmall, color = if (skipped) Palette.Accent else Palette.Text)
             }

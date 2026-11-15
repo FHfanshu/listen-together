@@ -552,7 +552,7 @@ private fun SkipChip(controller: AppController, ui: UiActions, me: String, room:
             .padding(horizontal = 12.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Rounded.SkipNext, contentDescription = "投票跳过", tint = if (voted) Palette.Accent else Palette.Text, modifier = Modifier.size(17.dp))
+        Icon(Icons.Rounded.SkipNext, contentDescription = "投票切到下一个", tint = if (voted) Palette.Accent else Palette.Text, modifier = Modifier.size(17.dp))
         Spacer(Modifier.width(3.dp))
         Text("${pb.skipperIds.size}/$need", style = VType.Chip, color = if (voted) Palette.Accent else Palette.Text)
     }
@@ -1091,7 +1091,7 @@ private fun PolicySheet(controller: AppController, ui: UiActions, room: Snapshot
                 when {
                     video.locked -> "服主锁定了档位，所有放映厅都按这一档。"
                     isAdmin -> "你是管理员，可以改这个放映厅的档位，改了大家都会看到。"
-                    else -> "档位由服主和管理员决定。没权限时点控制按钮会变成请求；不管哪一档，所有人都能投票跳过。"
+                    else -> "档位由服主和管理员决定。没权限时点控制按钮会变成请求；不管哪一档，所有人都能投票切到下一个。"
                 },
                 style = VType.Meta, color = Palette.Muted,
             )

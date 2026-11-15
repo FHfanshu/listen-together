@@ -526,7 +526,7 @@ class AppController(
         ControlAction.PAUSE -> "已请求暂停，等有权限的人同意"
         ControlAction.PLAY -> "已请求继续播放，等有权限的人同意"
         ControlAction.SEEK -> "已请求跳到 ${formatClock(positionMs)}，等有权限的人同意"
-        ControlAction.NEXT -> "已请求切到下一个，等有权限的人同意（也可以投票跳过）"
+        ControlAction.NEXT -> "已请求切到下一个，等有权限的人同意（也可以投票切到下一个）"
         else -> "已发出请求"
     }
 

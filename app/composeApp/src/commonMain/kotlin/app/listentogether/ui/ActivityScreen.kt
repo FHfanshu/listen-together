@@ -39,7 +39,7 @@ import app.listentogether.model.Activity
 import app.listentogether.model.MemberView
 import app.listentogether.model.Snapshot
 
-/** 房间记录：谁推荐了什么歌、谁点了赞、哪首歌被跳过。新的在上面。 */
+/** 房间记录：谁推荐了什么歌、谁点了赞、哪些歌因切歌结束播放。新的在上面。 */
 @Composable
 fun ActivityScreen(controller: AppController, room: Snapshot, onClose: () -> Unit) {
     PlatformBackHandler(onBack = onClose)
@@ -53,7 +53,7 @@ fun ActivityScreen(controller: AppController, room: Snapshot, onClose: () -> Uni
         }
         if (room.activity.isEmpty()) {
             Text(
-                "还没有记录。点歌、点赞、跳过都会记在这里。",
+                "还没有记录。点歌、点赞、切歌都会记在这里。",
                 color = Palette.Muted, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().padding(top = 48.dp, start = 24.dp, end = 24.dp),
             )
@@ -112,7 +112,7 @@ private fun describe(a: Activity) = buildAnnotatedString {
         }
         Activity.SKIP -> {
             withStyle(bold) { append(title) }
-            append(" 被跳过")
+            append(" 因切歌结束播放")
             if (a.names.isNotEmpty()) append("（${a.names.joinToString("、")}）")
         }
         else -> withStyle(bold) { append(title) }

@@ -43,8 +43,8 @@ android {
         applicationId = "app.listentogether"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "0.7.2"
+        versionCode = 14
+        versionName = "0.7.3"
         manifestPlaceholders["appLabel"] = "一起听"
     }
     compileOptions { isCoreLibraryDesugaringEnabled = true }
